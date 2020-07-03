@@ -51,7 +51,7 @@ func main() {
 	// to discover and attach credentials.
 	identity, err := WhoAmI(ctx)
 	if err != nil {
-		fmt.Printf("Couldn't resolve identity: %v", err)
+		fmt.Printf("Couldn't resolve identity: %v\n", err)
 	} else {
 		fmt.Printf("Using identity: %s\n", identity)
 	}

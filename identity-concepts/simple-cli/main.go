@@ -43,19 +43,18 @@ func main() {
 		// in this case are public and accessible to all authenticated users.
 		projectID = "bigquery-public-data"
 	}
-	fmt.Printf("Using project: %s\n", projectID)
 	ctx := context.Background()
 
-	// This tool doesn't inherently have identity configuration, so we'll
-	// ask a remote endpoint.  The act of sending the request will use ADC
-	// to discover and attach credentials.
+	// Ask the Google oauth endpoint who it thinks this process is.
+	fmt.Println()
 	identity, err := WhoAmI(ctx)
 	if err != nil {
-		fmt.Printf("Couldn't resolve identity: %v\n", err)
+		log.Printf("Couldn't resolve identity: %v", err)
 	} else {
-		fmt.Printf("Using identity: %s\n", identity)
+		log.Printf("Using identity: %s\n", identity)
 	}
 
+	fmt.Println()
 	// Instantiate a BigQuery client
 	client, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {
@@ -81,6 +80,9 @@ func main() {
 }
 
 // WhoAmI returns the identity of the invoking process based on ADC.
+// In practice, if we find an identity source, it will get attached
+// to the HTTP request to the oauth2 userinfo endpoint as a token
+// in the HTTP headers.
 func WhoAmI(ctx context.Context) (string, error) {
 
 	svc, err := oauth2.NewService(ctx)
@@ -96,6 +98,7 @@ func WhoAmI(ctx context.Context) (string, error) {
 	}
 
 	// We got a response back, but the identity is somehow empty.
+	// Treat this as an error.
 	if resp.Email == "" {
 		return "", errors.New("could not resolve identity")
 	}

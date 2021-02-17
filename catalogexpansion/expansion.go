@@ -25,7 +25,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func SimpleProjectList(ctx context.Context, filter string, pageSize int64) ([]string, error) {
+func SimpleProjectList(ctx context.Context, filter string, blacklistProjects []string) ([]string, error) {
 
 	service, err := cloudresourcemanager.NewService(ctx)
 	if err != nil {
@@ -36,16 +36,15 @@ func SimpleProjectList(ctx context.Context, filter string, pageSize int64) ([]st
 	pageToken := ""
 	for {
 		call := service.Projects.List().PageToken(pageToken).Filter(filter)
-		if pageSize > 0 {
-			call = call.PageSize(pageSize)
-		}
 		resp, err := call.Do()
 		if err != nil {
 			return nil, fmt.Errorf("call error: %v", err)
 		}
 		//log.Printf("resourcemanager page had %d elements", len(resp.Projects))
 		for _, v := range resp.Projects {
-			projects = append(projects, v.ProjectId)
+			if !blacklisted(v.ProjectId, blacklistProjects) {
+				projects = append(projects, v.ProjectId)
+			}
 		}
 
 		if resp.NextPageToken == "" {
@@ -94,7 +93,7 @@ func SimpleTablesList(ctx context.Context, client *bigquery.Client, ds *bigquery
 	return tables, nil
 }
 
-func ChannelProjectList(ctx context.Context, filter string, ch chan string) error {
+func ChannelProjectList(ctx context.Context, filter string, blacklistProjects []string, ch chan string) error {
 	service, err := cloudresourcemanager.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("cloudresourcemanager.NewService: %v", err)
@@ -110,7 +109,9 @@ func ChannelProjectList(ctx context.Context, filter string, ch chan string) erro
 		}
 		log.Printf("resourcemanager page had %d elements", len(resp.Projects))
 		for _, v := range resp.Projects {
-			ch <- v.ProjectId
+			if !blacklisted(v.ProjectId, blacklistProjects) {
+				ch <- v.ProjectId
+			}
 		}
 
 		if resp.NextPageToken == "" {
@@ -124,6 +125,15 @@ func ChannelProjectList(ctx context.Context, filter string, ch chan string) erro
 	return nil
 }
 
+func blacklisted(probed string, blacklist []string) bool {
+	for _, v := range blacklist {
+		if probed == v {
+			return true
+		}
+	}
+	return false
+}
+
 type Update struct {
 	// only set for project updates.
 	Project string
@@ -133,17 +143,15 @@ type Update struct {
 	TotalTables int64
 }
 
-func Process(ctx context.Context, client *bigquery.Client, projectFilter string) error {
+func Process(ctx context.Context, client *bigquery.Client, projectFilter string, blacklistProjects []string, projectScanners, datasetScanners int) error {
 
 	// TODO: should we use buffered channels?
-	projectChan := make(chan string, 100)
-	datasetChan := make(chan *bigquery.Dataset, 100)
-	updateChan := make(chan *Update, 100)
+	projectChan := make(chan string, 200)
+	datasetChan := make(chan *bigquery.Dataset, 200)
+	updateChan := make(chan *Update, 200)
 
-	projectScanners := 2
 	var projectWg sync.WaitGroup
 
-	datasetScanners := 2
 	var datasetWg sync.WaitGroup
 
 	var updateWg sync.WaitGroup
@@ -184,7 +192,7 @@ func Process(ctx context.Context, client *bigquery.Client, projectFilter string)
 	// It will close the project channel when it's done.
 	var projectErr error
 	go func() {
-		projectErr = ChannelProjectList(ctx, projectFilter, projectChan)
+		projectErr = ChannelProjectList(ctx, projectFilter, blacklistProjects, projectChan)
 	}()
 
 	// start pool for processing project entries.
@@ -249,7 +257,7 @@ func processProjects(ctx context.Context, client *bigquery.Client, projectChan <
 				datasetChan <- ds
 			}
 			// notify we've walked this project.
-			//log.Printf("dataset traversal of project %s done", project)
+			log.Printf("dataset traversal of project %s done", project)
 			updateChan <- &Update{
 				Project: project,
 			}

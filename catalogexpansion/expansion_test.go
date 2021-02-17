@@ -23,7 +23,8 @@ import (
 	"cloud.google.com/go/bigquery"
 )
 
-var projectFilter = "parent.type:folder parent.id:1020941983720"
+var projectFilter = "parent.type:folder parent.id:1020941983720 lifecycleState:ACTIVE"
+var blacklistProjects = []string{"long-door-651"}
 
 func TestSimpleProjectList(t *testing.T) {
 	if os.Getenv("PROJECT_ID") == "" {
@@ -32,7 +33,7 @@ func TestSimpleProjectList(t *testing.T) {
 
 	ctx := context.Background()
 
-	projects, err := SimpleProjectList(ctx, projectFilter, 0)
+	projects, err := SimpleProjectList(ctx, projectFilter, blacklistProjects)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func TestSimpleExpansion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct BQ client: %v", err)
 	}
-	projects, err := SimpleProjectList(ctx, projectFilter, 0)
+	projects, err := SimpleProjectList(ctx, projectFilter, blacklistProjects)
 	if err != nil {
 		t.Fatalf("project list error: %v", err)
 	}
@@ -90,7 +91,7 @@ func TestChannelProjectList(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = ChannelProjectList(ctx, projectFilter, ch)
+		err = ChannelProjectList(ctx, projectFilter, nil, ch)
 	}()
 
 	var results int64
@@ -128,7 +129,7 @@ func TestConcurrentExpansion(t *testing.T) {
 		t.Fatalf("failed to construct BQ client: %v", err)
 	}
 
-	err = Process(ctx, bqClient, projectFilter)
+	err = Process(ctx, bqClient, projectFilter, blacklistProjects, 50, 50)
 	if err != nil {
 		t.Fatalf("process failed: %v", err)
 	}

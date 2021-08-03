@@ -181,7 +181,10 @@ func resolveOutput(ref *jobRef, outFlag string) string {
 	if outFlag != "" {
 		return outFlag
 	}
-	return fmt.Sprintf("%s.%s.%s.png", ref.Project, ref.Location, ref.JobID)
+	if ref.Location == "" {
+		return fmt.Sprintf("%s__%s.png", ref.Project, ref.JobID)
+	}
+	return fmt.Sprintf("%s__%s__%s.png", ref.Project, ref.Location, ref.JobID)
 }
 
 func main() {

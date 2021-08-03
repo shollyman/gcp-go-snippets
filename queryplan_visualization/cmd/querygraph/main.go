@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,13 @@ type jobRef struct {
 	Project  string
 	Location string
 	JobID    string
+}
+
+func (ref *jobRef) FullJobID() string {
+	if ref.Location == "" {
+		return fmt.Sprintf("%s:%s", ref.Project, ref.JobID)
+	}
+	return fmt.Sprintf("%s:%s.%s", ref.Project, ref.Location, ref.JobID)
 }
 
 func parseJobStr(in string) (*jobRef, error) {
@@ -106,13 +113,15 @@ func nameToColor(name string) string {
 }
 
 // stagesToDot converts the queryDetails datastructure into a dot representation.
-func stagesToDot(stages []*bigquery.ExplainQueryStage) []byte {
+func stagesToDot(stages []*bigquery.ExplainQueryStage, title string) []byte {
 
 	shufOut := make(map[int64]int64)
 	flushOut := make(map[int64]int64)
 	var buf bytes.Buffer
 
 	buf.WriteString("digraph {\n")
+	buf.WriteString("  labelloc=\"t\"\n")
+	buf.WriteString(fmt.Sprintf("  label=<<font point-size=\"30\">%s</font>>\n", title))
 	buf.WriteString("\tnode[shape=record]\n")
 	for _, s := range stages {
 
@@ -205,7 +214,7 @@ func main() {
 		log.Fatalf("failed to get query stages: %v", err)
 	}
 
-	b := stagesToDot(stages)
+	b := stagesToDot(stages, jobRef.FullJobID())
 
 	outputName := resolveOutput(jobRef, *outputFile)
 	if err := dotToPNG(b, *dotPath, outputName); err != nil {

@@ -7,26 +7,31 @@ querygraph is a simple CLI tool that can be used to generate visual query graphs
 execution metadata.  
 
 ```
-Usage: queryplan <job>
+Usage: querygraph <job>
+
+Allowed format of the <job> argument:
+ - project:location.jobid
+ - project:jobid
+
+
+Optional Flags:
+
   -dot_path string
         path to the dot (graphviz) binary (default "/usr/bin/dot")
   -out string
-        path to the output file.  By default, creates a file based on the job ID in CWD.
+        path to the output file.  By default, creates a file based on the job ID in the current directory.
 ```
 
-The format of the job ID is the same fully qualified format as reported by tools such as the Google Cloud Console or the `bq` CLI tool:
-
-<projectid>:(location.)<job_id>
+The format of the job ID is the same fully qualified format as reported by tools such as the Google Cloud Console or the `bq` CLI tool:  `projectid:location.job_id` or `projectid.job_id`
 
 For example, here's a job with location included:
 `shollyman-demo-test:US.bquxjob_4cccbe9b_17b0e287542`
 
 Or, location omitted:
-
 `shollyman-demo-test:bquxjob_4cccbe9b_17b0e287542`
 
 
-## Example Outputs
+## Examples of Use
 
 ### Golang Imports
 This query identifies commonly imported golang packages found in the github public data tables.

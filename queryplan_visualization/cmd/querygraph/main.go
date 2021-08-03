@@ -191,11 +191,16 @@ func main() {
 
 	var (
 		dotPath    = flag.String("dot_path", "/usr/bin/dot", "path to the dot (graphviz) binary")
-		outputFile = flag.String("out", "", "path to the output file.  By default, creates a file based on the job ID in CWD.")
+		outputFile = flag.String("out", "", "path to the output file.  By default, creates a file based on the job ID in the current directory.")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s <job id>\n", os.Args[0])
-
+		buf := new(bytes.Buffer)
+		buf.WriteString(fmt.Sprintf("Usage: %s <job>\n\n", os.Args[0]))
+		buf.WriteString("Allowed format of the <job> argument:\n")
+		buf.WriteString(" - project:location.jobid\n")
+		buf.WriteString(" - project:jobid\n")
+		buf.WriteString("\n\nOptional Flags:\n\n")
+		fmt.Fprint(os.Stderr, buf.String())
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -205,11 +210,11 @@ func main() {
 	jobArg := flag.Arg(0)
 	if jobArg == "" {
 		flag.Usage()
+		return
 	}
 	jobRef, err := parseJobStr(jobArg)
 	if err != nil {
-		log.Fatalf("parse error (%q): %v", jobArg, err)
-		flag.Usage()
+		log.Fatalf("job parse error (%q): %v", jobArg, err)
 	}
 
 	stages, err := fetchQueryDetails(ctx, jobRef)

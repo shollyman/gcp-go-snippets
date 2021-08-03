@@ -58,4 +58,5 @@ GROUP BY entry
 ORDER BY distinct_repos DESC, frequency DESC
 LIMIT 1000
 ```
-![Image of query plan shollyman-demo-test:US.bquxjob_4cccbe9b_17b0e287542](./examples/shollyman-demo-test_US_bquxjob_4cccbe9b_17b0e287542.png)
+
+[Corresponding image of a specific query execution graph](./examples/shollyman-demo-test_US_bquxjob_4cccbe9b_17b0e287542.png)

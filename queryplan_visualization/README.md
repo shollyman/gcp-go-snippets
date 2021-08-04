@@ -30,6 +30,9 @@ For example, here's a job with location included:
 Or, location omitted:
 `shollyman-demo-test:bquxjob_4cccbe9b_17b0e287542`
 
+## Dependencies
+
+This tool requires the [graphviz](https://graphviz.org/) `dot` binary to be present on the system where the CLI is run.  The `-dot_path` flag can be used to indicate an alternative location for the binary.
 
 ## Examples of Use
 
@@ -59,4 +62,4 @@ ORDER BY distinct_repos DESC, frequency DESC
 LIMIT 1000
 ```
 
-[Corresponding image of a specific query execution graph](./examples/shollyman-demo-test_US_bquxjob_4cccbe9b_17b0e287542.png)
+![Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)

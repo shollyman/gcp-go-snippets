@@ -48,7 +48,7 @@ func parseJobStr(in string) (*jobRef, error) {
 	jr := &jobRef{}
 	i := strings.LastIndex(in, ":")
 	if i <= 0 || len(in) < i+1 {
-		return nil, errors.New("malformed job string")
+		return nil, errors.New("malformed job string, expected form of 'project:location.jobid'")
 	}
 	jr.Project = in[0:i]
 	in = in[i+1:]
@@ -98,7 +98,7 @@ func fetchQueryDetails(ctx context.Context, ref *jobRef) ([]*bigquery.ExplainQue
 // nameToColor is used for mapping a dominant query stage description to a hex color string.
 func nameToColor(name string) string {
 	parts := strings.Split(name, ":")
-	//remove spaces and plus symbols (indicate complex stages)
+	// Remove spaces and plus symbols (indicate complex stages).
 	opType := strings.Trim(parts[1], " +")
 	switch opType {
 	case "Input":
@@ -191,7 +191,7 @@ func main() {
 
 	var (
 		dotPath    = flag.String("dot_path", "/usr/bin/dot", "path to the dot (graphviz) binary")
-		outputFile = flag.String("out", "", "path to the output file.  By default, creates a file based on the job ID in the current directory.")
+		outputFile = flag.String("out", "", "path to the output PNG file.  By default, creates a file based on the job ID in the current directory.")
 	)
 	flag.Usage = func() {
 		buf := new(bytes.Buffer)

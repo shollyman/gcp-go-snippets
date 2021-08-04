@@ -167,7 +167,7 @@ func stagesToDot(stages []*bigquery.ExplainQueryStage, title string) []byte {
 }
 
 func dotToPNG(in []byte, dotBinPath, outputFile string) error {
-	cmd := exec.Command(dotBinPath, "-Tpng", "-Gdpi=100", "-o", outputFile)
+	cmd := exec.Command(dotBinPath, "-Tpng", "-Gdpi=72", "-o", outputFile)
 	cmd.Stdin = bytes.NewReader(in)
 	_, err := cmd.Output()
 	if err != nil {

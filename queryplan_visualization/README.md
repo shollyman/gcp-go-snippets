@@ -62,9 +62,34 @@ ORDER BY distinct_repos DESC, frequency DESC
 LIMIT 1000
 ```
 
-[Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
+![Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
 
 
-![Corresponding image of a specific query execution graph](https://github.com/shollyman/gcp-go-snippets/blob/feat-qplan-graph/queryplan_visualization/examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
+### Top 200 Stackoverflow question tags in the last year
 
+This query examines stackoverflow question data from the trailing 365 days to
+identify most frequently used tags, as well as computing some basic tag statistics.
+```
+SELECT
+  tag,
+  COUNT(1) as total_questions,
+  APPROX_COUNT_DISTINCT(owner_user_id) as approx_questioners,
+  FORMAT("%.2f", AVG(score)) as avg_score,
+  MAX(score) as max_score,
+FROM
+(
+SELECT
+  tag,
+  id as question_id,
+  owner_user_id,
+  score,
+FROM `bigquery-public-data.stackoverflow.posts_questions` t,
+UNNEST(SPLIT(t.tags,"|")) as tag
+WHERE creation_date > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 365 DAY)
+)
+GROUP BY tag
+ORDER BY total_questions DESC 
+LIMIT 200
+```
 
+![Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_7f564718_17b1201e6df.png)

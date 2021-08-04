@@ -107,9 +107,43 @@ func nameToColor(name string) string {
 		return "#4caf50"
 	case "Join":
 		return "#ff6f00"
+	case "Sort":
+		return "#990000"
+	case "Aggregate":
+		return "#0033cc"
 	default:
 		return "#2196f3"
 	}
+}
+
+func renderStage(buf *bytes.Buffer, stage *bigquery.ExplainQueryStage) {
+	buf.WriteString(fmt.Sprintf("\ts%d[label=<\n", stage.ID))
+	buf.WriteString("\t\t<TABLE>\n")
+	top := fmt.Sprintf("<font color=\"white\"><font point-size=\"36\">%s</font><br/>%d/%d workers, %d records read</font>", stage.Name, stage.CompletedParallelInputs, stage.ParallelInputs, stage.RecordsRead)
+	buf.WriteString(fmt.Sprintf("\t\t<TR><TD COLSPAN=\"2\" COLOR=\"#FFFFFF\" BGCOLOR=\"%s\">%s</TD></TR>\n", nameToColor(stage.Name), top))
+
+	if len(stage.Steps) > 0 {
+		for _, st := range stage.Steps {
+			l := len(st.Substeps)
+			if l > 0 {
+				// we both escape html entities, as well as pipe characters as they have a special meaning in dot syntax.
+				buf.WriteString(fmt.Sprintf("<tr><td ROWSPAN=\"%d\">%s</td><td>%s</td></tr>\n", l, st.Kind, strings.ReplaceAll(html.EscapeString(st.Substeps[0]), "|", "\\|")))
+				if l > 1 {
+					for _, sub := range st.Substeps[1:] {
+						buf.WriteString(fmt.Sprintf("<tr><td>%s</td></tr>\n", html.EscapeString(sub)))
+					}
+				}
+			} else {
+				buf.WriteString(fmt.Sprintf("<tr><td>%s</td><td>&nbsp;</td></tr>\n", st.Kind))
+			}
+
+		}
+	}
+	buf.WriteString("\t\t</TABLE>\n\t>\n")
+	if strings.Contains(stage.Name, "Repartition") {
+		buf.WriteString(" style=dotted")
+	}
+	buf.WriteString("]\n")
 }
 
 // stagesToDot converts the queryDetails datastructure into a dot representation.
@@ -124,36 +158,9 @@ func stagesToDot(stages []*bigquery.ExplainQueryStage, title string) []byte {
 	buf.WriteString(fmt.Sprintf("  label=<<font point-size=\"30\">%s</font>>\n", title))
 	buf.WriteString("\tnode[shape=record]\n")
 	for _, s := range stages {
-
 		shufOut[s.ID] = s.ShuffleOutputBytes
 		flushOut[s.ID] = s.ShuffleOutputBytesSpilled
-
-		buf.WriteString(fmt.Sprintf("\ts%d[label=<\n", s.ID))
-		buf.WriteString("\t\t<TABLE>\n")
-		top := fmt.Sprintf("<font color=\"white\"><font point-size=\"36\">%s</font><br/>%d/%d workers, %d records read</font>", s.Name, s.CompletedParallelInputs, s.ParallelInputs, s.RecordsRead)
-		buf.WriteString(fmt.Sprintf("\t\t<TR><TD COLSPAN=\"2\" COLOR=\"#FFF\" BGCOLOR=\"%s\">%s</TD></TR>\n", nameToColor(s.Name), top))
-
-		if len(s.Steps) > 0 {
-			for _, st := range s.Steps {
-				l := len(st.Substeps)
-				if l > 0 {
-					buf.WriteString(fmt.Sprintf("<tr><td ROWSPAN=\"%d\">%s</td><td>%s</td></tr>\n", l, st.Kind, html.EscapeString(st.Substeps[0])))
-					if l > 1 {
-						for _, sub := range st.Substeps[1:] {
-							buf.WriteString(fmt.Sprintf("<tr><td>%s</td></tr>\n", html.EscapeString(sub)))
-						}
-					}
-				} else {
-					buf.WriteString(fmt.Sprintf("<tr><td>%s</td><td>&nbsp;</td></tr>\n", st.Kind))
-				}
-
-			}
-		}
-		buf.WriteString("\t\t</TABLE>\n\t>\n")
-		if strings.Contains(s.Name, "Repartition") {
-			buf.WriteString(" style=dotted")
-		}
-		buf.WriteString("]\n")
+		renderStage(&buf, s)
 	}
 	buf.WriteString("\n")
 	for _, s := range stages {
@@ -169,7 +176,7 @@ func stagesToDot(stages []*bigquery.ExplainQueryStage, title string) []byte {
 func dotToPNG(in []byte, dotBinPath, outputFile string) error {
 	cmd := exec.Command(dotBinPath, "-Tpng", "-Gdpi=72", "-o", outputFile)
 	cmd.Stdin = bytes.NewReader(in)
-	_, err := cmd.Output()
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to generate: %w", err)
 	}

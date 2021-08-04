@@ -62,4 +62,9 @@ ORDER BY distinct_repos DESC, frequency DESC
 LIMIT 1000
 ```
 
-![Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
+[Corresponding image of a specific query execution graph](./examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
+
+
+![Corresponding image of a specific query execution graph](https://github.com/shollyman/gcp-go-snippets/blob/feat-qplan-graph/queryplan_visualization/examples/shollyman-demo-test__US__bquxjob_4cccbe9b_17b0e287542.png)
+
+

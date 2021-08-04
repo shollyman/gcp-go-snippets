@@ -44,6 +44,7 @@ func (ref *jobRef) FullJobID() string {
 	return fmt.Sprintf("%s:%s.%s", ref.Project, ref.Location, ref.JobID)
 }
 
+// parseJobStr converts a formatted job string to a structured representation.
 func parseJobStr(in string) (*jobRef, error) {
 	jr := &jobRef{}
 	i := strings.LastIndex(in, ":")
@@ -116,6 +117,7 @@ func nameToColor(name string) string {
 	}
 }
 
+// renderStage generates the dot node definition for a single query stage into buf.
 func renderStage(buf *bytes.Buffer, stage *bigquery.ExplainQueryStage) {
 	buf.WriteString(fmt.Sprintf("\ts%d[label=<\n", stage.ID))
 	buf.WriteString("\t\t<TABLE>\n")
@@ -173,6 +175,7 @@ func stagesToDot(stages []*bigquery.ExplainQueryStage, title string) []byte {
 
 }
 
+// dotToPNG invokes the dot binary to generate the output PNG file.
 func dotToPNG(in []byte, dotBinPath, outputFile string) error {
 	cmd := exec.Command(dotBinPath, "-Tpng", "-Gdpi=72", "-o", outputFile)
 	cmd.Stdin = bytes.NewReader(in)
